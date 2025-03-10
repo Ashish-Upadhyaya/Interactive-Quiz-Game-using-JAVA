@@ -1,87 +1,182 @@
-# Interactive-Quiz-Game-using-JAVA
+# Quiz Game
 
 ## Overview
 
-The **Quiz Game Application** is a Java-based desktop application designed to provide an interactive and engaging quiz experience. The application allows users to select a difficulty level (Easy, Medium, or Hard) and the number of questions they want to answer. The game features a timer for each question, a scoring system, and the ability to skip questions or quit the game. At the end of the quiz, the user is presented with their results, including the number of correct and incorrect answers, as well as their total score.
+This is a Java-based Quiz Game application built using the Swing library for the graphical user interface. The game allows players to select their difficulty level (Easy, Medium, or Hard) and answer multiple-choice questions within a 30-second time limit per question. Players can track their score in real-time and view their final results at the end of the quiz.
 
-## Features
-
-- **Difficulty Levels**: Users can choose from three difficulty levels: Easy, Medium, and Hard.
-- **Customizable Quiz Length**: Users can specify the number of questions they want to answer.
-- **Timer**: Each question has a 30-second timer, adding a sense of urgency to the game.
-- **Interactive UI**: The application features a user-friendly interface with colorful buttons and clear labels.
-- **Score Tracking**: The application keeps track of the user's score, displaying it in real-time.
-- **Question Skipping**: Users can skip questions if they are unsure of the answer.
-- **End-of-Quiz Summary**: At the end of the quiz, users are presented with a summary of their performance, including the number of correct and incorrect answers, and their total score.
-- **Replay Option**: Users can replay the quiz with the same or different settings.
-
-## How to Run the Application
-
-1. **Prerequisites**:
-   - Ensure you have Java Development Kit (JDK) installed on your system.
-   - A Java IDE (e.g., IntelliJ IDEA, Eclipse) is recommended for running the application.
-
-2. **Download the Code**:
-   - Clone the repository or download the source code files (`QuizGame.java` and `Question.java`).
-
-3. **Compile and Run**:
-   - Open the project in your Java IDE.
-   - Compile and run the `QuizGame.java` file.
-
-4. **Play the Game**:
-   - Upon running the application, a window will open prompting you to select a difficulty level and the number of questions.
-   - After making your selections, the quiz will begin.
-   - Answer the questions by clicking on the provided options. You can skip questions or quit the game at any time.
-   - At the end of the quiz, you will see your results and have the option to replay or quit.
-
-## Code Structure
-
-- **QuizGame.java**: This is the main class that contains the logic for the quiz game. It handles the UI, question management, scoring, and timer functionality.
-- **Question.java**: This class represents a single quiz question, including the question text, answer choices, and the index of the correct answer.
-
-### Key Components
-
-- **UI Components**:
-  - `JFrame`: The main window of the application.
-  - `JPanel`: Used to organize and layout the UI components.
-  - `JLabel`: Displays the question, score, and timer.
-  - `JButton`: Used for answer options, next, skip, and quit buttons.
-  - `Timer`: Manages the 30-second countdown for each question.
-
-- **Game Logic**:
-  - **Question Management**: Questions are stored in a list and shuffled at the start of the game. The application displays one question at a time and handles user input.
-  - **Scoring**: The application keeps track of the user's score based on correct and incorrect answers.
-  - **Timer**: A 30-second timer is started for each question. If the timer runs out, the question is automatically skipped.
-  - **End-of-Quiz Summary**: After all questions are answered, the application displays a summary of the user's performance.
-
-## Customization
-
-- **Adding More Questions**: You can easily add more questions to the quiz by modifying the `initializeQuestions()` method in the `QuizGame` class. Simply add new `Question` objects to the `questions` list for each difficulty level.
-- **Changing the Timer**: The timer duration can be adjusted by modifying the `timeRemaining` variable in the `startQuestionTimer()` method.
-- **UI Customization**: The appearance of the UI can be customized by modifying the colors, fonts, and layout in the `initializeUI()` method.
-
-## Screenshots
-
-![Quiz Game Screenshot](screenshot.png)  
-*Example of the Quiz Game in action.*
-
-## License
-
-This project is open-source and available under the MIT License. Feel free to use, modify, and distribute the code as you see fit.
-
-## Contributing
-
-Contributions are welcome! If you have any suggestions, bug reports, or feature requests, please open an issue or submit a pull request.
-
-## Acknowledgments
-
-- This project was inspired by the need for a simple, interactive quiz game that can be used for educational purposes or just for fun.
-- Special thanks to the Java Swing library for providing the tools to create a rich desktop application.
-
-## Contact
-
-For any questions or feedback, feel free to reach out to the project maintainer at [your-email@example.com].
+The project is ideal for beginners looking to understand how to build interactive desktop applications in Java while exploring concepts like event handling, timers, and UI design.
 
 ---
 
-Enjoy playing the Quiz Game! 🎮
+## Features
+
+### Core Functionality
+1. **Difficulty Selection**:
+   - Players can choose between three difficulty levels: Easy, Medium, and Hard.
+   - Each level contains a unique set of questions tailored to its complexity.
+
+2. **Customizable Game Length**:
+   - Players can specify how many questions they want to answer during the game.
+
+3. **Timer for Each Question**:
+   - A 30-second countdown timer ensures players answer questions quickly.
+   - If the timer runs out, the game automatically moves to the next question.
+
+4. **Score Tracking**:
+   - Correct answers increase the player's score.
+   - Incorrect answers are highlighted in red, and the correct answer is shown in green.
+
+5. **Skip and Next Buttons**:
+   - Players can skip a question or move to the next one after answering.
+
+6. **Game Over Screen**:
+   - Displays total questions, correct answers, wrong answers, and the final score.
+   - Includes options to replay the game or quit.
+
+7. **Replay Functionality**:
+   - Players can restart the game with shuffled questions without restarting the application.
+
+8. **Quit Option**:
+   - Allows players to exit the game at any time and view their current results.
+
+---
+
+## Installation and Setup
+
+### Prerequisites
+- **Java Development Kit (JDK)**: Ensure you have JDK 8 or higher installed on your system.
+- **IDE (Optional)**: Use an IDE like IntelliJ IDEA, Eclipse, or NetBeans for easier development and testing.
+
+### Steps to Run the Application
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/yourusername/quiz-game.git
+   ```
+
+2. **Navigate to the Project Directory**:
+   ```bash
+   cd quiz-game
+   ```
+
+3. **Compile the Code**:
+   Open a terminal and compile the Java files:
+   ```bash
+   javac QuizGame.java
+   ```
+
+4. **Run the Application**:
+   Execute the compiled class file:
+   ```bash
+   java QuizGame
+   ```
+
+5. **Play the Game**:
+   - Follow the on-screen instructions to select your difficulty level and start the quiz.
+
+---
+
+## Gameplay Instructions
+
+1. **Start the Game**:
+   - Launch the application and select your preferred difficulty level (Easy, Medium, or Hard).
+   - Specify the number of questions you'd like to answer.
+
+2. **Answer Questions**:
+   - Read the question displayed on the screen.
+   - Select one of the four provided options by clicking the corresponding button.
+   - Correct answers will turn the button green, while incorrect answers will turn it red and highlight the correct option.
+
+3. **Use Timer Wisely**:
+   - Each question has a 30-second timer. Answer before the timer runs out to avoid penalties.
+
+4. **Skip or Move to the Next Question**:
+   - Use the "Skip" button to bypass a question.
+   - After answering, click "Next" to proceed to the next question.
+
+5. **End of the Game**:
+   - Once all questions are answered or skipped, the game ends.
+   - View your final score, total correct answers, and total wrong answers on the game-over screen.
+
+6. **Replay or Quit**:
+   - Click "Replay 🔄" to restart the game with shuffled questions.
+   - Click "Quit" to exit the application.
+
+---
+
+## Code Structure
+
+### Classes
+1. **`QuizGame`**:
+   - The main class that initializes the game window and handles the game logic.
+   - Manages UI components, question display, scoring, and timers.
+
+2. **`Question`**:
+   - Represents a single quiz question with its text, answer choices, and the index of the correct answer.
+
+### Key Methods
+- `initializeUI()`: Sets up the graphical user interface.
+- `showLevelSelectionDialog()`: Prompts the user to select difficulty and number of questions.
+- `initializeQuestions()`: Loads questions based on the selected difficulty.
+- `shuffleQuestions()`: Randomizes the order of questions.
+- `showQuestion()`: Displays the current question and starts the timer.
+- `startQuestionTimer()`: Starts the 30-second countdown for each question.
+- `handleTimeUp()`: Handles scenarios when the timer runs out.
+- `endQuiz()`: Displays the game-over screen with final results.
+- `nextQuestion()`: Moves to the next question or ends the game if all questions are answered.
+
+---
+
+## Customization
+
+### Adding New Questions
+To add more questions:
+1. Open the `initializeQuestions()` method in the `QuizGame` class.
+2. Add new `Question` objects to the respective difficulty level (`Easy`, `Medium`, or `Hard`).
+   Example:
+   ```java
+   questions.add(new Question("What is the capital of Australia?", 
+       new String[]{"Sydney", "Melbourne", "Canberra", "Brisbane"}, 2));
+   ```
+
+### Modifying the Timer
+To change the timer duration:
+1. Locate the `startQuestionTimer()` method.
+2. Modify the `timeRemaining` variable to your desired value (e.g., 60 for a 1-minute timer).
+
+---
+
+## Screenshots
+
+### Main Game Screen
+![Main Game Screen](screenshots/main_game.png)
+
+### Game Over Screen
+![Game Over Screen](screenshots/game_over.png)
+
+*(Replace the above image paths with actual screenshots of your application.)*
+
+---
+
+## Contributing
+
+Contributions are welcome! If you'd like to improve this project, please follow these steps:
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Submit a pull request with a detailed description of your changes.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## Acknowledgments
+
+- Inspired by classic quiz games and educational apps.
+- Built using Java Swing for a lightweight and platform-independent UI.
+
+---
+
+Feel free to reach out with any questions or suggestions! Enjoy the game! 🎮

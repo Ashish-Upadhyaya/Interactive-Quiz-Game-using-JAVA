@@ -50,7 +50,7 @@ The project is ideal for beginners looking to understand how to build interactiv
 ### Steps to Run the Application
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/quiz-game.git
+   git clone https://github.com/Ashish-Upadhyaya/Interactive-Quiz-Game-using-JAVA.git
    ```
 
 2. **Navigate to the Project Directory**:

@@ -148,10 +148,14 @@ To change the timer duration:
 ## Screenshots
 
 ### Main Game Screen
-![Main Game Screen](screenshots/main_game_screen.png)
+<div align="center">
+  <img src="screenshots/Screenshot%202025-03-11%20031002.png" alt="Main Game Screen" width="600"/>
+</div>
 
 ### Game Over Screen
-![Game Over Screen](screenshots/game_over_screen.png)
+<div align="center">
+  <img src="screenshots/Screenshot%202025-03-11%20031036.png" alt="Game Over Screen" width="600"/>
+</div>
 
 *(Replace the above image paths with actual screenshots of your application.)*
 

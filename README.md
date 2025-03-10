@@ -148,15 +148,10 @@ To change the timer duration:
 ## Screenshots
 
 ### Main Game Screen
-<div align="center">
-  <img src="screenshots/Screenshot%202025-03-11%20031002.png" alt="Main Game Screen" width="600"/>
-</div>
+![Main Game Screen]((https://github.com/Ashish-Upadhyaya/Interactive-Quiz-Game-using-JAVA/blob/main/Screenshot%202025-03-11%20031002.png))
 
 ### Game Over Screen
-<div align="center">
-  <img src="screenshots/Screenshot%202025-03-11%20031036.png" alt="Game Over Screen" width="600"/>
-</div>
-
+![Game Over Screen]((https://github.com/Ashish-Upadhyaya/Interactive-Quiz-Game-using-JAVA/blob/main/Screenshot%202025-03-11%20031036.png))
 *(Replace the above image paths with actual screenshots of your application.)*
 
 ---

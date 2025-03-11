@@ -1,10 +1,10 @@
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.io.*;
+import java.util.*;
 import java.util.List;
+import javax.sound.sampled.*;
+import javax.swing.*;
 
 public class QuizGame extends JFrame {
     private List<Question> questions;
@@ -12,7 +12,6 @@ public class QuizGame extends JFrame {
     private int score = 0;
     private int totalQuestionsToPlay;
     private String selectedLevel;
-
     private JLabel questionLabel;
     private JButton[] optionButtons;
     private JButton nextButton;
@@ -21,10 +20,13 @@ public class QuizGame extends JFrame {
     private JLabel scoreLabel;
     private JLabel timerLabel;
     private JPanel mainPanel;
-
-    private Timer questionTimer; // Timer for the 30-second countdown
+    private JProgressBar progressBar;
+    private JButton hintButton;
+    private JButton pauseButton;
+    private javax.swing.Timer questionTimer; // Timer for the 30-second countdown
     private int timeRemaining; // Time remaining for the current question
-
+    private javax.swing.Timer quizTimer; // Timer for the entire quiz
+    private int totalTimeTaken = 0; // Total time taken in seconds
     private int totalCorrect = 0;
     private int totalWrong = 0;
 
@@ -34,13 +36,10 @@ public class QuizGame extends JFrame {
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-
         // Initialize UI
         initializeUI();
-
         // Show level selection dialog
         showLevelSelectionDialog();
-
         // Make the JFrame visible
         setVisible(true);
     }
@@ -81,6 +80,7 @@ public class QuizGame extends JFrame {
         JPanel optionsPanel = new JPanel(new GridLayout(2, 2, 30, 30)); // 2 rows, 2 columns with 30px gaps
         optionsPanel.setBackground(new Color(25, 25, 112));
         optionsPanel.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50)); // Padding around options
+
         optionButtons = new JButton[4];
         for (int i = 0; i < 4; i++) {
             optionButtons[i] = new JButton();
@@ -89,13 +89,21 @@ public class QuizGame extends JFrame {
             optionButtons[i].setForeground(Color.WHITE);
             optionButtons[i].setFocusPainted(false);
             optionButtons[i].setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
-            optionButtons[i].addActionListener(new OptionButtonListener());
+            optionButtons[i].addActionListener(this::optionButtonActionPerformed);
             optionsPanel.add(optionButtons[i]);
         }
         mainPanel.add(optionsPanel, BorderLayout.CENTER);
 
-        // Button Panel for Next, Skip, and Quit
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 10, 10)); // 1 row, 3 columns with 10px gaps
+        // Progress Bar
+        progressBar = new JProgressBar(0, totalQuestionsToPlay);
+        progressBar.setValue(0);
+        progressBar.setStringPainted(true);
+        progressBar.setForeground(new Color(0, 153, 0)); // Green color
+        progressBar.setBackground(new Color(25, 25, 112)); // Dark blue background
+        mainPanel.add(progressBar, BorderLayout.SOUTH);
+
+        // Button Panel for Next, Skip, Quit, Hint, and Pause
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 5, 10, 10)); // 1 row, 5 columns with 10px gaps
         buttonPanel.setBackground(new Color(25, 25, 112));
 
         // Next Button
@@ -105,7 +113,7 @@ public class QuizGame extends JFrame {
         nextButton.setForeground(Color.WHITE);
         nextButton.setFocusPainted(false);
         nextButton.setEnabled(false); // Disabled by default
-        nextButton.addActionListener(new NextButtonListener());
+        nextButton.addActionListener(e -> nextQuestion());
         buttonPanel.add(nextButton);
 
         // Skip Button
@@ -114,8 +122,26 @@ public class QuizGame extends JFrame {
         skipButton.setBackground(new Color(255, 153, 0)); // Orange button color
         skipButton.setForeground(Color.WHITE);
         skipButton.setFocusPainted(false);
-        skipButton.addActionListener(new SkipButtonListener());
+        skipButton.addActionListener(e -> nextQuestion());
         buttonPanel.add(skipButton);
+
+        // Hint Button
+        hintButton = new JButton("Hint");
+        hintButton.setFont(new Font("Arial", Font.BOLD, 18));
+        hintButton.setBackground(new Color(255, 204, 0)); // Yellow button color
+        hintButton.setForeground(Color.WHITE);
+        hintButton.setFocusPainted(false);
+        hintButton.addActionListener(this::hintButtonActionPerformed);
+        buttonPanel.add(hintButton);
+
+        // Pause Button
+        pauseButton = new JButton("Pause");
+        pauseButton.setFont(new Font("Arial", Font.BOLD, 18));
+        pauseButton.setBackground(new Color(255, 153, 0)); // Orange button color
+        pauseButton.setForeground(Color.WHITE);
+        pauseButton.setFocusPainted(false);
+        pauseButton.addActionListener(this::pauseButtonActionPerformed);
+        buttonPanel.add(pauseButton);
 
         // Quit Button
         quitButton = new JButton("Quit");
@@ -123,11 +149,10 @@ public class QuizGame extends JFrame {
         quitButton.setBackground(new Color(255, 0, 0)); // Red button color
         quitButton.setForeground(Color.WHITE);
         quitButton.setFocusPainted(false);
-        quitButton.addActionListener(new QuitButtonListener());
+        quitButton.addActionListener(this::quitButtonActionPerformed);
         buttonPanel.add(quitButton);
 
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-
         add(mainPanel);
     }
 
@@ -142,6 +167,9 @@ public class QuizGame extends JFrame {
                 levels,
                 levels[0]
         );
+        if (selectedLevel == null || selectedLevel.isEmpty()) {
+            selectedLevel = "Easy"; // Default to Easy if no selection
+        }
 
         String totalQuestions = JOptionPane.showInputDialog(
                 this,
@@ -149,7 +177,6 @@ public class QuizGame extends JFrame {
                 "Game Length",
                 JOptionPane.QUESTION_MESSAGE
         );
-
         try {
             totalQuestionsToPlay = Integer.parseInt(totalQuestions);
         } catch (NumberFormatException e) {
@@ -160,25 +187,36 @@ public class QuizGame extends JFrame {
         // Initialize questions based on the selected level
         initializeQuestions();
         shuffleQuestions(); // Shuffle questions at the start
+        progressBar.setMaximum(totalQuestionsToPlay);
         showQuestion();
+
+        // Start the quiz timer
+        quizTimer = new javax.swing.Timer(1000, e -> totalTimeTaken++);
+        quizTimer.start();
     }
 
     private void initializeQuestions() {
         questions = new ArrayList<>();
-        if (selectedLevel.equals("Easy")) {
-            questions.add(new Question("What is the capital of France?", 
+        // Add your questions here
+        switch (selectedLevel) {
+            case "Easy":
+                questions.add(new Question("What is the capital of France?",
+                        new String[]{"Berlin", "Madrid", "Paris", "Rome"}, 2));
+                // ... (other easy questions)
+                
+                questions.add(new Question("What is the capital of France?", 
                 new String[]{"Berlin", "Madrid", "Paris", "Rome"}, 2));
 
-            questions.add(new Question("Which planet is known as the Red Planet?", 
+                questions.add(new Question("Which planet is known as the Red Planet?", 
                 new String[]{"Earth", "Mars", "Jupiter", "Saturn"}, 1));
 
-            questions.add(new Question("Who wrote 'To Kill a Mockingbird'?", 
+                questions.add(new Question("Who wrote 'To Kill a Mockingbird'?", 
                 new String[]{"Harper Lee", "Mark Twain", "J.K. Rowling", "Ernest Hemingway"}, 0));
 
-            questions.add(new Question("What is the largest ocean on Earth?", 
+                questions.add(new Question("What is the largest ocean on Earth?", 
                 new String[]{"Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"}, 3));
             
-            questions.add(new Question("Which gas do humans breathe out?", 
+                questions.add(new Question("Which gas do humans breathe out?", 
                 new String[]{"Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"}, 1));
             
             questions.add(new Question("What is the chemical symbol for water?", 
@@ -333,9 +371,18 @@ public class QuizGame extends JFrame {
             
             questions.add(new Question("What is the name of the fairy in 'Peter Pan'?", 
                 new String[]{"Tinker Bell", "Cinderella", "Aurora", "Belle"}, 0));
+                break;
 
-        } else if (selectedLevel.equals("Medium")) {
-            questions.add(new Question("What is the largest ocean on Earth?", 
+
+
+
+
+// ----------------------------------------------------------------------------------------------------------------------------------------------
+            case "Medium":
+                questions.add(new Question("What is the largest ocean on Earth?",
+                        new String[]{"Atlantic", "Indian", "Arctic", "Pacific"}, 3));
+                // ... (other medium questions)
+                questions.add(new Question("What is the largest ocean on Earth?", 
                 new String[]{"Atlantic", "Indian", "Arctic", "Pacific"}, 3));
             
             questions.add(new Question("Which element has the chemical symbol 'O'?", 
@@ -493,9 +540,17 @@ public class QuizGame extends JFrame {
             
             questions.add(new Question("What is the name of the highest waterfall in the world?", 
                 new String[]{"Niagara Falls", "Angel Falls", "Victoria Falls", "Yosemite Falls"}, 1));
+                break;
 
-        } else if (selectedLevel.equals("Hard")) {
-            questions.add(new Question("What is the smallest prime number?", 
+
+
+
+// ----------------------------------------------------------------------------------------------------------------------------------------------
+            case "Hard":
+                questions.add(new Question("What is the smallest prime number?",
+                        new String[]{"1", "2", "3", "5"}, 1));
+                // ... (other hard questions)
+                questions.add(new Question("What is the smallest prime number?", 
                 new String[]{"1", "2", "3", "5"}, 1));
             
             questions.add(new Question("Which country is known as the Land of the Rising Sun?", 
@@ -641,6 +696,7 @@ public class QuizGame extends JFrame {
             
             questions.add(new Question("What is the name of the largest species of bear?", 
                 new String[]{"Grizzly Bear", "Black Bear", "Polar Bear", "Panda Bear"}, 2));
+                break;
         }
     }
 
@@ -651,16 +707,13 @@ public class QuizGame extends JFrame {
     private void showQuestion() {
         if (currentQuestionIndex < totalQuestionsToPlay && currentQuestionIndex < questions.size()) {
             Question currentQuestion = questions.get(currentQuestionIndex);
-            // Add question number to the question text
-            questionLabel.setText("<html><center>Q" + (currentQuestionIndex + 1) + ": " + currentQuestion.getQuestionText() + "</center></html>"); // Center-align question text
-
+            questionLabel.setText("<html><center>Q" + (currentQuestionIndex + 1) + ": " + currentQuestion.getQuestionText() + "</center></html>");
             String[] choices = currentQuestion.getChoices();
             for (int i = 0; i < choices.length; i++) {
                 optionButtons[i].setText(choices[i]);
                 optionButtons[i].setEnabled(true);
                 optionButtons[i].setBackground(new Color(0, 102, 204)); // Reset button color
             }
-
             // Start the 30-second timer
             startQuestionTimer();
         } else {
@@ -671,41 +724,32 @@ public class QuizGame extends JFrame {
     private void startQuestionTimer() {
         timeRemaining = 30; // Reset timer to 30 seconds
         timerLabel.setText("Time: " + timeRemaining);
-
         if (questionTimer != null) {
             questionTimer.stop();
         }
-
-        questionTimer = new Timer(1000, new ActionListener() {  
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                timeRemaining--;
-                timerLabel.setText("Time: " + timeRemaining);
-
-                if (timeRemaining <= 0) {
-                    questionTimer.stop();
-                    handleTimeUp();
-                }
+        questionTimer = new javax.swing.Timer(1000, e -> {
+            timeRemaining--;
+            timerLabel.setText("Time: " + timeRemaining);
+            if (timeRemaining <= 0) {
+                questionTimer.stop();
+                handleTimeUp();
             }
         });
         questionTimer.start();
     }
 
     private void handleTimeUp() {
-        // Disable buttons and enable the Next button
+        // Stop the quiz timer when time is up
+        quizTimer.stop();
+    
         for (JButton button : optionButtons) {
             button.setEnabled(false);
         }
-        nextButton.setEnabled(true); // Enable Next button when timer runs out
-
-        // Automatically move to the next question after 2 seconds
-        Timer delayTimer = new Timer(5000, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                nextQuestion();
-            }
-        });
-        delayTimer.setRepeats(false); // Ensure the timer only runs once
+        nextButton.setEnabled(true);
+    
+        // Delay before moving to the next question
+        javax.swing.Timer delayTimer = new javax.swing.Timer(5000, e -> nextQuestion());
+        delayTimer.setRepeats(false);
         delayTimer.start();
     }
 
@@ -713,180 +757,250 @@ public class QuizGame extends JFrame {
         currentQuestionIndex++;
         if (currentQuestionIndex < totalQuestionsToPlay) {
             showQuestion();
-            nextButton.setEnabled(false); // Disable Next button for the new question
+            nextButton.setEnabled(false);
+            progressBar.setValue(currentQuestionIndex + 1);
+    
+            // Restart the quiz timer when the next question starts
+            quizTimer.start();
         } else {
             endQuiz();
         }
     }
 
     private void endQuiz() {
-        // Hide the main panel
+        // Stop the quiz timer when the game ends
+        quizTimer.stop();
+    
         mainPanel.setVisible(false);
-
-        // Create a new panel for the game over screen
         JPanel gameOverPanel = new JPanel(new BorderLayout());
         gameOverPanel.setBackground(new Color(25, 25, 112));
         gameOverPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        // Game Over Label
         JLabel gameOverLabel = new JLabel("Game Over!");
         gameOverLabel.setFont(new Font("Serif", Font.BOLD, 36));
         gameOverLabel.setForeground(Color.WHITE);
         gameOverLabel.setHorizontalAlignment(SwingConstants.CENTER);
         gameOverPanel.add(gameOverLabel, BorderLayout.NORTH);
-
-        // Results Panel
-        JPanel resultsPanel = new JPanel(new GridLayout(4, 1, 10, 10));
+    
+        JPanel resultsPanel = new JPanel(new GridLayout(5, 1, 10, 10));
         resultsPanel.setBackground(new Color(25, 25, 112));
-
         JLabel totalQuestionsLabel = new JLabel("Total Questions: " + totalQuestionsToPlay);
         totalQuestionsLabel.setFont(new Font("Arial", Font.BOLD, 24));
         totalQuestionsLabel.setForeground(Color.WHITE);
         totalQuestionsLabel.setHorizontalAlignment(SwingConstants.CENTER);
         resultsPanel.add(totalQuestionsLabel);
-
+    
         JLabel correctLabel = new JLabel("Total Correct: " + totalCorrect);
         correctLabel.setFont(new Font("Arial", Font.BOLD, 24));
         correctLabel.setForeground(Color.WHITE);
         correctLabel.setHorizontalAlignment(SwingConstants.CENTER);
         resultsPanel.add(correctLabel);
-
+    
         JLabel wrongLabel = new JLabel("Total Wrong: " + totalWrong);
         wrongLabel.setFont(new Font("Arial", Font.BOLD, 24));
         wrongLabel.setForeground(Color.WHITE);
         wrongLabel.setHorizontalAlignment(SwingConstants.CENTER);
         resultsPanel.add(wrongLabel);
-
+    
         JLabel scoreLabel = new JLabel("Total Score: " + score);
         scoreLabel.setFont(new Font("Arial", Font.BOLD, 24));
         scoreLabel.setForeground(Color.WHITE);
         scoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
         resultsPanel.add(scoreLabel);
-
+    
+        JLabel timeTakenLabel = new JLabel("Total Time Taken: " + totalTimeTaken + " seconds");
+        timeTakenLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        timeTakenLabel.setForeground(Color.WHITE);
+        timeTakenLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        resultsPanel.add(timeTakenLabel);
+    
         gameOverPanel.add(resultsPanel, BorderLayout.CENTER);
-
-        // Button Panel for Replay and Quit
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 10)); // 1 row, 2 columns with 10px gaps
+    
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 10));
         buttonPanel.setBackground(new Color(25, 25, 112));
-
-        // Replay Button with Emoji
+    
         JButton replayButton = new JButton("Replay 🔄");
         replayButton.setFont(new Font("Arial", Font.BOLD, 18));
-        replayButton.setBackground(new Color(0, 153, 0)); // Green button color
+        replayButton.setBackground(new Color(0, 153, 0));
         replayButton.setForeground(Color.WHITE);
         replayButton.setFocusPainted(false);
-        replayButton.addActionListener(new ReplayButtonListener());
+        replayButton.addActionListener(e -> replayGame());
         buttonPanel.add(replayButton);
-
-        // Quit Button
+    
         JButton quitButton = new JButton("Quit");
         quitButton.setFont(new Font("Arial", Font.BOLD, 18));
-        quitButton.setBackground(new Color(255, 0, 0)); // Red button color
+        quitButton.setBackground(new Color(255, 0, 0));
         quitButton.setForeground(Color.WHITE);
         quitButton.setFocusPainted(false);
-        quitButton.addActionListener(new QuitButtonListener());
+        quitButton.addActionListener(this::quitButtonActionPerformed);
         buttonPanel.add(quitButton);
-
+    
         gameOverPanel.add(buttonPanel, BorderLayout.SOUTH);
-
-        // Add the game over panel to the frame
         add(gameOverPanel);
         revalidate();
         repaint();
     }
 
-    private class OptionButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            JButton selectedButton = (JButton) e.getSource();
-            String selectedAnswer = selectedButton.getText();
-            Question currentQuestion = questions.get(currentQuestionIndex);
 
-            // Stop the question timer
+    private void playSound(String soundFile) {
+        try {
+            // Load the sound file as a resource
+            InputStream inputStream = getClass().getResourceAsStream("/sounds/" + soundFile);
+            if (inputStream == null) {
+                System.err.println("Sound file not found: " + soundFile);
+                return;
+            }
+    
+            // Get the audio input stream
+            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(inputStream);
+    
+            // Check the audio format
+            AudioFormat format = audioInputStream.getFormat();
+            System.out.println("Audio Format: " + format);
+    
+            // If the format is not supported, convert it to a supported format
+            if (!isFormatSupported(format)) {
+                AudioFormat targetFormat = new AudioFormat(
+                        AudioFormat.Encoding.PCM_SIGNED,
+                        format.getSampleRate(),
+                        16, // 16-bit
+                        format.getChannels(),
+                        format.getChannels() * 2,
+                        format.getSampleRate(),
+                        false // Little-endian
+                );
+                audioInputStream = AudioSystem.getAudioInputStream(targetFormat, audioInputStream);
+                System.out.println("Converted Audio Format: " + targetFormat);
+            }
+    
+            // Play the sound
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioInputStream);
+            clip.start();
+        } catch (UnsupportedAudioFileException e) {
+            System.err.println("Unsupported audio file: " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error reading audio file: " + e.getMessage());
+        } catch (LineUnavailableException e) {
+            System.err.println("Audio line unavailable: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Error playing sound: " + e.getMessage());
+        }
+    }
+    
+    private boolean isFormatSupported(AudioFormat format) {
+        DataLine.Info info = new DataLine.Info(Clip.class, format);
+        return AudioSystem.isLineSupported(info);
+    }
+
+    private void optionButtonActionPerformed(ActionEvent e) {
+    JButton selectedButton = (JButton) e.getSource();
+    String selectedAnswer = selectedButton.getText();
+    Question currentQuestion = questions.get(currentQuestionIndex);
+
+    // Stop the question timer and quiz timer
+    questionTimer.stop();
+    quizTimer.stop();
+
+    if (selectedAnswer.equals(currentQuestion.getChoices()[currentQuestion.getCorrectAnswerIndex()])) {
+        score++;
+        totalCorrect++;
+        scoreLabel.setText("Score: " + score);
+        selectedButton.setBackground(Color.GREEN);
+        playSound("correct.wav");
+    } else {
+        totalWrong++;
+        selectedButton.setBackground(Color.RED);
+        optionButtons[currentQuestion.getCorrectAnswerIndex()].setBackground(Color.GREEN);
+        playSound("wrong.wav");
+    }
+
+    for (JButton button : optionButtons) {
+        button.setEnabled(false);
+    }
+    nextButton.setEnabled(true);
+
+    // Delay before moving to the next question
+    javax.swing.Timer delayTimer = new javax.swing.Timer(5000, evt -> nextQuestion());
+    delayTimer.setRepeats(false);
+    delayTimer.start();
+}
+
+    private int hintsUsed = 0;
+    private void hintButtonActionPerformed(ActionEvent e) {
+        int totalHints = (totalQuestionsToPlay / 10) * 3;
+
+        if (hintsUsed >= totalHints) {
+            JOptionPane.showMessageDialog(this, "No hints available!");
+            hintButton.setEnabled(false);
+            return;
+        }
+        Question currentQuestion = questions.get(currentQuestionIndex);
+        int correctIndex = currentQuestion.getCorrectAnswerIndex();
+        List<Integer> optionsToDisable = new ArrayList<>();
+        for (int i = 0; i < optionButtons.length; i++) {
+            if (i != correctIndex) {
+                optionsToDisable.add(i);
+            }
+        }
+        Collections.shuffle(optionsToDisable);
+        for (int i = 0; i < 2 && i < optionsToDisable.size(); i++) {
+            optionButtons[optionsToDisable.get(i)].setEnabled(false);
+        }
+
+        hintsUsed++;
+
+        if (hintsUsed >= totalHints) {
+        hintButton.setEnabled(false);
+        }
+    }
+    
+
+    private void pauseButtonActionPerformed(ActionEvent e) {
+        if (questionTimer.isRunning()) {
             questionTimer.stop();
-
-            if (selectedAnswer.equals(currentQuestion.getChoices()[currentQuestion.getCorrectAnswerIndex()])) {
-                score++;
-                totalCorrect++;
-                scoreLabel.setText("Score: " + score);
-                selectedButton.setBackground(Color.GREEN); // Highlight correct answer
-            } else {
-                totalWrong++;
-                selectedButton.setBackground(Color.RED); // Highlight wrong answer
-                // Highlight the correct answer
-                optionButtons[currentQuestion.getCorrectAnswerIndex()].setBackground(Color.GREEN);
-            }
-
-            // Disable all buttons
-            for (JButton button : optionButtons) {
-                button.setEnabled(false);
-            }
-
-            // Enable the Next button
-            nextButton.setEnabled(true);
-
-            // Automatically move to the next question after 2 seconds
-            Timer delayTimer = new Timer(5000, new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    nextQuestion();
-                }
-            });
-            delayTimer.setRepeats(false); // Ensure the timer only runs once
-            delayTimer.start();
+            pauseButton.setText("Resume");
+        } else {
+            questionTimer.start();
+            pauseButton.setText("Pause");
         }
     }
 
-    private class NextButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            nextQuestion();
+    private void quitButtonActionPerformed(ActionEvent e) {
+        int choice = JOptionPane.showConfirmDialog(this, "Are you sure you want to quit?", "Quit Game", JOptionPane.YES_NO_OPTION);
+        if (choice == JOptionPane.YES_OPTION) {
+            System.exit(0);
         }
     }
 
-    private class SkipButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            // Skip the current question
-            nextQuestion();
+    private void replayGame() {
+        // Reset all game variables
+        currentQuestionIndex = 0;
+        score = 0;
+        totalCorrect = 0;
+        totalWrong = 0;
+        totalTimeTaken = 0; // Reset total time taken to 0
+        hintsUsed = 0; // Reset hints used to 0
+        scoreLabel.setText("Score: 0");
+        timerLabel.setText("Time: 30");
+    
+        // Re-enable the hint button
+        hintButton.setEnabled(true);
+    
+        // Stop and restart the quiz timer
+        if (quizTimer != null) {
+            quizTimer.stop();
         }
-    }
-
-    private class QuitButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            // Calculate total score and show it in a dialog
-            String message = "Total Correct: " + totalCorrect + "\n"
-                           + "Total Wrong: " + totalWrong + "\n"
-                           + "Total Score: " + score;
-            JOptionPane.showMessageDialog(QuizGame.this, message, "Quiz Results", JOptionPane.INFORMATION_MESSAGE);
-            System.exit(0); // Exit the application
-        }
-    }
-
-    private class ReplayButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            // Reset game state
-            currentQuestionIndex = 0;
-            score = 0;
-            totalCorrect = 0;
-            totalWrong = 0;
-            scoreLabel.setText("Score: 0");
-
-            // Shuffle questions
-            shuffleQuestions();
-
-            // Switch back to the main panel
-            getContentPane().removeAll();
-            add(mainPanel);
-            mainPanel.setVisible(true); // Ensure the main panel is visible
-            revalidate();
-            repaint();
-
-            // Show the first question
-            showQuestion();
-        }
+        quizTimer = new javax.swing.Timer(1000, e -> totalTimeTaken++);
+        quizTimer.start();
+    
+        // Shuffle questions and reset UI
+        shuffleQuestions();
+        getContentPane().removeAll();
+        add(mainPanel);
+        mainPanel.setVisible(true);
+        revalidate();
+        repaint();
+        showQuestion();
     }
 
     public static void main(String[] args) {
@@ -895,9 +1009,9 @@ public class QuizGame extends JFrame {
 }
 
 class Question {
-    private String questionText;
-    private String[] choices;
-    private int correctAnswerIndex;
+    private final String questionText;
+    private final String[] choices;
+    private final int correctAnswerIndex;
 
     public Question(String questionText, String[] choices, int correctAnswerIndex) {
         this.questionText = questionText;

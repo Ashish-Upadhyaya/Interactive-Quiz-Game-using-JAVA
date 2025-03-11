@@ -676,7 +676,7 @@ public class QuizGame extends JFrame {
             questionTimer.stop();
         }
 
-        questionTimer = new Timer(1000, new ActionListener() {  
+        questionTimer = new Timer(5000, new ActionListener() {  
             @Override
             public void actionPerformed(ActionEvent e) {
                 timeRemaining--;

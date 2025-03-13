@@ -128,7 +128,7 @@ Contributions are welcome! If you'd like to improve this project, please follow 
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
@@ -137,6 +137,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contact
 
-For any questions, suggestions, or feedback, feel free to reach out via email at [your-email@example.com] or open an issue on the GitHub repository.
+For any questions, suggestions, or feedback, feel free to reach out via email at [ashishofficial231@gmail.com] or open an issue on the GitHub repository.
 
 Enjoy the game! 🎮
